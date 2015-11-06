@@ -1,0 +1,7 @@
+fs-attach-record {
+  display: inline-block;
+}
+
+fs-attach-record .input-group {
+  display: block;
+}

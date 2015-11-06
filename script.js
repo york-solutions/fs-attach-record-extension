@@ -25,6 +25,7 @@ function setup(){
   var attach = document.createElement('fs-attach-record');
   attach.setAttribute('person-id', 'KWCF-GK5');
   attach.setAttribute('url', window.location.href);
+  attach.setAttribute('title', document.querySelector('h1').textContent);
   document.querySelector('#attach-to-tree').appendChild(attach);
 }
 

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 2,
+  "description": "Demo for the fs-attach-record polymer element.",
+  "name": "FS Attach Record",
+  "version": "0.0.1",
+  "content_scripts": [
+    {
+      "matches": [ 
+        "http://search.findmypast.co.uk/record*"
+      ],
+      "run_at": "document_end",
+      "js": [ 
+        "script.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    "components.html"
+  ]
+}

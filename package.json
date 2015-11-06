@@ -1,0 +1,19 @@
+{
+  "name": "fs-attach-record-extension",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "scripts": {
+    "build": "vulcanize --inline-scripts --inline-css --strip-comments bower_components/fs-attach-record/fs-attach-record.html > components.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/york-solutions/fs-attach-record-extension.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/york-solutions/fs-attach-record-extension/issues"
+  },
+  "homepage": "https://github.com/york-solutions/fs-attach-record-extension"
+}

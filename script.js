@@ -1,5 +1,3 @@
-console.log('fs attach record');
-
 function loadResource(url) {
   return new Promise(function(resolve, reject){
     var link = document.createElement('link');
@@ -25,10 +23,12 @@ function setup(){
   var attach = document.createElement('fs-attach-record');
   attach.setAttribute('person-id', 'KWCF-GK5');
   attach.setAttribute('url', window.location.href);
-  attach.setAttribute('title', document.querySelector('h1').textContent);
+  var title = document.querySelector('h1');
+  if(title){
+    attach.setAttribute('title', title.textContent);
+  }
   document.querySelector('#attach-to-tree').appendChild(attach);
 }
 
 loadResource(chrome.extension.getURL('components.html'))
   .then(setup);
-  

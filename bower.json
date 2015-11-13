@@ -10,6 +10,6 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "fs-attach-record": "fs-webcomponents/fs-attach-record#~0.1.0"
+    "fs-attach-record": "fs-webcomponents/fs-attach-record#~0.1.1"
   }
 }

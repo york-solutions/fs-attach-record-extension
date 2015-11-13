@@ -7066,7 +7066,7 @@ this.fire('dom-change');
   };
   
   FSPersonBehavior = [ FSBehavior, FSPersonBehaviorImpl ];
-</script><script src="https://cdn.jsdelivr.net/familysearch-javascript-sdk/2/familysearch-javascript-sdk.min.js"></script> 
+</script><script src="https://cdn.jsdelivr.net/familysearch-javascript-sdk/2.3/familysearch-javascript-sdk.min.js"></script> 
 
 <script>
   // Wrap in a function so we don't pollute the global scope.
@@ -7224,7 +7224,7 @@ this.fire('dom-change');
         
       },
       
-      attached: function(){
+      ready: function(){
         this._setClient(Clients.getClient(this.name));
         
         // If a client hasn't already been registered with that name
@@ -11797,7 +11797,7 @@ The `aria-labelledby` attribute will be set to the header element, if one exists
     </style>
     <fs-client name="[[clientName]]" on-authenticated-changed="_urlChanged"></fs-client>
     <template is="dom-repeat" items="{{personIds}}">
-      <fs-person-chip person-id="{{item}}"></fs-person-chip>
+      <fs-person-chip person-id="{{item}}" clientname="[[clientName]]"></fs-person-chip>
     </template>
   </template>
 </dom-module>
@@ -11832,7 +11832,6 @@ The `aria-labelledby` attribute will be set to the header element, if one exists
     
     _urlChanged: function(){
       if(this.url && this.isAuthenticated()){
-        var self = this;
         this.debounce('fs-source-attachments-load', function(){
           this._load();
         }, 400);
@@ -11842,23 +11841,32 @@ The `aria-labelledby` attribute will be set to the header element, if one exists
     },
     
     _load: function(){
-      // TODO: use built-in method when available
-      // https://github.com/FamilySearch/familysearch-javascript-sdk/issues/127
-      var self = this,
-          url = '/platform/tree/source-references?source=' + this.url,
-          headers = {
-            'X-FS-Feature-Tag': 'source-ref-query-param-change',
-            'Accept': 'application/x-fs-v1+json'
-          };
-      self.getClient().http('GET', url, headers).then(function(response){
-        var responseData = response.getData();
-        if(responseData && responseData.persons && responseData.persons.length){
-          self._setPersonIds(responseData.persons.map(function(person){
-            return person.id;
-          }));
-        } else {
-          self._setPersonIds([]);
-        }
+      var self = this;
+      self.getClient().getSourceAttachments(this.url).then(function(response){
+        
+        // https://groups.google.com/a/ldsmail.net/d/msg/FSDN/Pg_VyWNYlzs/BECXG0nnBwAJ
+        // Urls are not matched exactly so we enforce exact matching here. First
+        // we gather a list of source Ids that actually match. If we found any
+        // then we compare the source Ids against source refs to get a list of
+        // persons that the matching sources are attached to.
+        
+        var matchingSourceIds = response.getSourceDescriptions().filter(function(sourceDescription){
+          return sourceDescription.getAbout() === self.url;
+        }).map(function(sourceDescription){
+          return sourceDescription.getId();
+        });
+        
+        var matchingPersonIds = [],
+            personRefs = response.getPersonSourceRefs();
+        matchingSourceIds.forEach(function(sourceId){
+          personRefs.forEach(function(ref){
+            if(ref.getDescription().indexOf(sourceId) !== -1){
+              matchingPersonIds.push(ref.getAttachedEntityId());
+            }
+          });
+        });
+        
+        self._setPersonIds(matchingPersonIds);
       });
     }
     
@@ -12227,29 +12235,38 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
     </style>
     <fs-client name="[[clientName]]" on-authenticated-changed="loadPerson"></fs-client>
-    <paper-dialog modal="">
+    <paper-dialog modal="" on-iron-overlay-closed="_dialogClosed">
       <h2>{{_titleText(alreadyAttached)}}</h2>
       <fs-person-chip person="[[person]]"></fs-person-chip>
       <paper-dialog-scrollable>
-        <div class="attachments" hidden$="{{!_showAttachedList(alreadyAttached, _attachedPersonIds)}}">
-          <h2>This Source Is Already Attached To:</h2>
-          <fs-source-attachments url="[[url]]" person-ids="{{_attachedPersonIds}}"></fs-source-attachments>
+        <div hidden$="{{saved}}">
+          <div class="attachments" hidden$="{{!_showAttachedList(alreadyAttached, _attachedPersonIds)}}">
+            <h2>This Source Is Already Attached To:</h2>
+            <fs-source-attachments url="[[url]]" person-ids="{{_attachedPersonIds}}"></fs-source-attachments>
+          </div>
+          <div class="input-group">
+            <label>Source Title</label>
+            <input type="text" value="{{title::input}}" placeholder="Example: England, Death Certificate of Hugh S. Smith - (1832-1912)">
+          </div>
+          <div class="input-group">
+            <label>Web Page (Link to the Record)</label>
+            <input type="text" value="{{url::input}}" placeholder="Example: http://www.uk1841census.com/census_online.htm">
+          </div>
+          <div class="input-group">
+            <label>Where the Record Is Found (Citation)</label>
+            <textarea value="{{citation::input}}" placeholder="Example: UK Census, 1841, Arbroath, Perth, Scotland. Population schedule. Dwelling address. Federal archive. Digital Image"></textarea>
+          </div>
+          <div class="input-group">
+            <label>Describe the Record (Notes)</label>
+            <textarea value="{{notes::input}}" placeholder="Example: Hugh S. Smith Family Page 7. Lines 23-27. Arbroath, Scotland. UK Census 1841 Father: Robert Smith. Mother: Helen Strachen. Children: Hugh Sidley Smith, Robert Smith."></textarea>
+          </div>
+          <div class="input-group">
+            <label>Reason to Attach Source</label>
+            <textarea value="{{reason::input}}" placeholder="Explain why you attached this source to this person."></textarea>
+          </div>
         </div>
-        <div class="input-group">
-          <label>Source Title</label>
-          <input type="text" value="{{title::input}}" placeholder="Example: England, Death Certificate of Hugh S. Smith - (1832-1912)">
-        </div>
-        <div class="input-group">
-          <label>Web Page (Link to the Record)</label>
-          <input type="text" value="{{url::input}}" placeholder="Example: http://www.uk1841census.com/census_online.htm">
-        </div>
-        <div class="input-group">
-          <label>Where the Record Is Found (Citation)</label>
-          <textarea value="{{citation::input}}" placeholder="Example: UK Census, 1841, Arbroath, Perth, Scotland. Population schedule. Dwelling address. Federal archive. Digital Image"></textarea>
-        </div>
-        <div class="input-group">
-          <label>Describe the Record (Notes)</label>
-          <textarea value="{{notes::input}}" placeholder="Example: Hugh S. Smith Family Page 7. Lines 23-27. Arbroath, Scotland. UK Census 1841 Father: Robert Smith. Mother: Helen Strachen. Children: Hugh Sidley Smith, Robert Smith."></textarea>
+        <div hidden$="{{!saved}}">
+          <h3>The source has been attached.</h3>
         </div>
       </paper-dialog-scrollable>
       <div class="buttons">
@@ -12283,6 +12300,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
       
       url: {
+        type: String,
+        value: ''
+      },
+      
+      reason: {
         type: String,
         value: ''
       },
@@ -12329,30 +12351,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       // Show loading status
       self.$.save.disabled = true;
       self._setSaving(true);
-      
-      var person = self.person,
-          client = self.getClient();
-      
-      // Create source description
-      var sourceDescription = client.createSourceDescription({
-        about: self.url
-      });
-          
-      sourceDescription.setTitle(self.title);
-      sourceDescription.setCitation(self.citation);
-      sourceDescription.setText(self.notes);
-      sourceDescription.save().then(function(response){
+
+      // Create and attach source
+      self.person.addSource({
+        about: self.url,
+        citation: self.citation,
+        title: self.title,
+        text: self.notes
+      }, self.reason).then(function(response){
         
-        // Attach source description to person by creating source ref
-        var sourceRef = client.createSourceRef();
-        sourceRef.setSourceDescription(sourceDescription);
-        return sourceRef.save(person.getLink('source-references').href);
-      }).then(function(response){
-          
         // Hide loading indicator and show success message
         self._setSaving(false);
         self._setSaved(true);
-        
+        self._setAlreadyAttached(true);
       }).catch(function(error){
         console.error(error.stack);
       });
@@ -12381,6 +12392,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     
     _showAttachedList: function(alreadyAttached, _attachedPersonIds){
       return !alreadyAttached && _attachedPersonIds.length > 0;
+    },
+    
+    _dialogClosed: function(){
+      console.log('closed');
+      this._setSaved(false);
     }
     
   });
@@ -13237,7 +13253,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
     </style>
     <fs-client name="[[clientName]]"></fs-client>
-    <fs-attach-record-dialog id="dialog" person-id="[[personId]]" title="{{title}}" citation="{{citation}}" notes="{{notes}}" url="{{url}}" already-attached="{{alreadyAttached}}"></fs-attach-record-dialog>
+    <fs-attach-record-dialog id="dialog" person-id="[[personId]]" title="{{title}}" citation="{{citation}}" notes="{{notes}}" url="{{url}}" reason="{{reason}}" already-attached="{{alreadyAttached}}"></fs-attach-record-dialog>
     <paper-button on-click="open">{{_buttonText(alreadyAttached)}}</paper-button>
   </template>
 </dom-module>
@@ -13265,6 +13281,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       },
       
       url: {
+        type: String,
+        value: ''
+      },
+      
+      reason: {
         type: String,
         value: ''
       },

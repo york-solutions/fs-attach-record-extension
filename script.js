@@ -11,13 +11,12 @@ function loadResource(url) {
 }
 
 function setup(){
-  // Add fs-client
-  var fsClient = document.createElement('fs-client');
-  fsClient.setAttribute('client-id', 'a02j000000AhNBEAA3');
-  fsClient.setAttribute('redirect-uri', '/_fs-auth');
-  fsClient.setAttribute('environment', 'sandbox');
-  fsClient.setAttribute('save-access-token','');
-  document.body.appendChild(fsClient);
+  // Add fs-client. We can't build it in memory
+  // so we have to create and a attach a div then set
+  // the div's innerHTML so that it gets parsed all at once.
+  var div = document.createElement('div');
+  document.body.appendChild(div);
+  div.innerHTML = '<fs-client client-id="a02j000000AhNBEAA3" redirect-uri="/_fs-auth" environment="sandbox" save-access-token"></fs-client>';
   
   // Add fs-attach-record
   var attach = document.createElement('fs-attach-record');
